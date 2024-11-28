@@ -31,20 +31,33 @@ def main():
     # YouTube APIクライアントを作成
     youtube = build("youtube", "v3", credentials=credentials)
 
-    # 登録チャンネルを取得
-    request = youtube.subscriptions().list(
-        part="snippet",
-        mine=True,
-        maxResults=50  # 1回のリクエストで取得する件数
-    )
-    response = request.execute()
+    # 全件取得のためのリスト
+    all_subscriptions = []
+    next_page_token = None
+
+    # ページネーションで全件取得
+    while True:
+        request = youtube.subscriptions().list(
+            part="snippet",
+            mine=True,
+            maxResults=50,
+            pageToken=next_page_token  # 次のページトークンを指定
+        )
+        response = request.execute()
+
+        # 取得したアイテムをリストに追加
+        all_subscriptions.extend(response.get("items", []))
+
+        # 次のページがある場合はトークンを設定
+        next_page_token = response.get("nextPageToken")
+        if not next_page_token:
+            break
 
     # 結果を表示
-    for item in response.get("items", []):
+    for item in all_subscriptions:
         title = item["snippet"]["title"]
         channel_id = item["snippet"]["resourceId"]["channelId"]
         print(f"Title: {title}, URL: https://www.youtube.com/channel/{channel_id}")
 
 if __name__ == "__main__":
     main()
-
